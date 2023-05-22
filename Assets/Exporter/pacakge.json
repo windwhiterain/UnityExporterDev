@@ -1,9 +1,0 @@
-{
-    "name": "com.windwhiterain.Exporter",
-    "displayName": "Exporter",
-    "description": "Exporter information to outer proggram",
-    "version": "0.0.0",
-    "unity": "2021.3",
-    "license": "MIT",
-    "dependencies": {}
-}
