@@ -1,18 +1,25 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using EasySocket;
 
-public class MainContext : MonoBehaviour
+namespace Exporter
 {
-    // Start is called before the first frame update
-    void Start()
+    public class MainContext : MonoBehaviour
     {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
+        [SerializeField] string ip;
+        [SerializeField] int port;
+        Server server;
+        [ContextMenu("CreateServer")]
+        void CreateServer()
+        {
+            server = new Server(ip, port);
+            server.Create();
+        }
+        [ContextMenu("ReleaseServer")]
+        void ReleaseServer()
+        {
+            server.Release();
+        }
     }
 }
