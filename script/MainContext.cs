@@ -31,9 +31,9 @@ namespace Exporter
         [ContextMenu("Send")]
         void Send()
         {
-            node.connectorList[0].Send(new SmallData<System.Single>(1.2345f));
+            node.connectorList[0].Send(new ArrayData<System.Int32>(new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 }));
         }
-        SmallData<System.Single> testData = new SmallData<System.Single>();
+        ArrayData<System.Int32> testData = new ArrayData<System.Int32>();
         [ContextMenu("Receive")]
         void Receive()
         {
@@ -44,7 +44,7 @@ namespace Exporter
         {
             if (testData.Complete)
             {
-                Debug.Log(testData.Uncoded);
+                Debug.Log(testData.Uncoded.ToString());
             }
         }
         [ContextMenu("UpdateData")]
