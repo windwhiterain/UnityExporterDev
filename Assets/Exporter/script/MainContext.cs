@@ -1,25 +1,40 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using EasySocket;
 
 namespace Exporter
 {
+    using EasySocket;
     public class MainContext : MonoBehaviour
     {
         [SerializeField] string ip;
         [SerializeField] int port;
-        Server server;
+        NetNode node;
         [ContextMenu("CreateServer")]
-        void CreateServer()
+        void CreateNode()
         {
-            server = new Server(ip, port);
-            server.Create();
+            node = new NetNode(ip, port);
+            node.Create();
         }
         [ContextMenu("ReleaseServer")]
-        void ReleaseServer()
+        void ReleaseNode()
         {
-            server.Release();
+            node.Release();
+        }
+        [SerializeField] string connectIp;
+        [SerializeField] int connectPort;
+        [ContextMenu("NodeConnect")]
+        void NodeConnect()
+        {
+            node.Connect(connectIp, connectPort);
+        }
+        [ContextMenu("Test")]
+        void Test()
+        {
+            var s = new byte[sizeof(int)];
+            var count = node.connectorList[0].Source.Read(s, 0, sizeof(int));
+            Debug.Log(count);
+            Debug.Log(System.BitConverter.ToInt32(s));
         }
     }
 }
