@@ -13,36 +13,57 @@ namespace Exporter
         public abstract void Write(DataSource source);
         protected bool complete = false;
         public bool Complete { get { return complete; } }
-        protected int CodedLength<T>(T obj) { throw new System.Exception(); }
-        protected int CodedLength(System.Int32 obj) => sizeof(System.Int32);
-        protected int CodedLength(float obj) => sizeof(float);
         protected int CodedLength<T>()
         {
             T temp = default;
-            return CodedLength(temp);
+            if (temp is System.Int32)
+            {
+                return sizeof(System.Int32);
+            }
+            else if (temp is System.Int32)
+            {
+                return sizeof(System.Single);
+            }
+            else
+            {
+                throw new System.Exception();
+            }
         }
-        protected void EnCode<T>(T obj, System.Span<byte> coded) { throw new System.Exception(); }
-        protected void EnCode(System.Int32 obj, System.Span<byte> coded)
+        protected void EnCode<T>(T obj, System.Span<byte> coded)
         {
-            System.BitConverter.TryWriteBytes(coded, obj);
-        }
-        protected void EnCode(float obj, System.Span<byte> coded)
-        {
-            System.BitConverter.TryWriteBytes(coded, obj);
-        }
-        protected T DeCode<T>(System.Span<byte> coded, T obj) { throw new System.Exception(); }
-        protected System.Int32 DeCode(System.Span<byte> coded, System.Int32 obj)
-        {
-            return System.BitConverter.ToInt32(coded);
-        }
-        protected float DeCode(System.Span<byte> coded, float obj)
-        {
-            return System.BitConverter.ToSingle(coded);
+            if (obj is System.Int32 int32)
+            {
+                System.BitConverter.TryWriteBytes(coded, int32);
+            }
+            else if (obj is System.Single single)
+            {
+                System.BitConverter.TryWriteBytes(coded, single);
+            }
+            else
+            {
+                throw new System.Exception();
+            }
         }
         protected T DeCode<T>(System.Span<byte> coded)
         {
             T temp = default;
-            return DeCode(coded, temp);
+            if (temp is System.Int32)
+            {
+                var _ret = System.BitConverter.ToInt32(coded);
+                if (_ret is T ret)
+                {
+                    return ret;
+                }
+            }
+            if (temp is System.Single)
+            {
+                var _ret = System.BitConverter.ToSingle(coded);
+                if (_ret is T ret)
+                {
+                    return ret;
+                }
+            }
+            throw new System.Exception();
         }
     }
     public class SmallData<T> : Data
@@ -51,7 +72,7 @@ namespace Exporter
         int completeIndex = 0;
         public SmallData(T uncoded)
         {
-            coded = new byte[CodedLength(uncoded)];
+            coded = new byte[CodedLength<T>()];
             EnCode(uncoded, coded);
         }
         public SmallData()
