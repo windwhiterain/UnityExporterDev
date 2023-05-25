@@ -34,7 +34,9 @@ namespace Exporter
         }
         Dictionary<string, int> nameIndexMap = new Dictionary<string, int>()
     {
-        {"i32",0}
+        {"i32",0},
+        {"f64",1},
+        {"ni32",2}
     };
         int[] indexIdMap;
         public IEnumerable<Data> GetDataToDecode(int id)

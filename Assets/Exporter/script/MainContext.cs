@@ -28,10 +28,24 @@ namespace Exporter
         {
             node.Connect(connectIp, connectPort);
         }
-        [ContextMenu("Test")]
-        void Test()
+        [ContextMenu("Send")]
+        void Send()
         {
-            node.connectorList[0].Send(new SmallData<System.Int32>(114514));
+            node.connectorList[0].Send(new SmallData<System.Single>(1.2345f));
+        }
+        SmallData<System.Single> testData = new SmallData<System.Single>();
+        [ContextMenu("Receive")]
+        void Receive()
+        {
+            node.connectorList[0].Receive(testData);
+        }
+        [ContextMenu("Result")]
+        void Result()
+        {
+            if (testData.Complete)
+            {
+                Debug.Log(testData.Uncoded);
+            }
         }
         [ContextMenu("UpdateData")]
         void UpdateData()
