@@ -5,6 +5,9 @@ using System.IO;
 
 namespace Exporter
 {
+    using i32 = SmallData<System.Int32>;
+    using f64 = SmallData<System.Single>;
+    using ni32 = ArrayData<System.Int32>;
     public class Protocol : MonoBehaviour
     {
         [System.Serializable]

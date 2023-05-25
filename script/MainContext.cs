@@ -31,10 +31,7 @@ namespace Exporter
         [ContextMenu("Test")]
         void Test()
         {
-            var s = new byte[sizeof(int)];
-            var count = node.connectorList[0].Source.Read(s, 0, sizeof(int));
-            Debug.Log(count);
-            Debug.Log(System.BitConverter.ToInt32(s));
+            node.connectorList[0].Send(new SmallData<System.Int32>(114514));
         }
     }
 }

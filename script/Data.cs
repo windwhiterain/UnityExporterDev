@@ -4,7 +4,9 @@ using UnityEngine;
 
 namespace Exporter
 {
-
+    using i32 = SmallData<System.Int32>;
+    using f64 = SmallData<System.Single>;
+    using ni32 = ArrayData<System.Int32>;
     public abstract class Data
     {
         public abstract void Read(DataSource source);
@@ -43,7 +45,7 @@ namespace Exporter
             return DeCode(coded, temp);
         }
     }
-    public abstract class SmallData<T> : Data
+    public class SmallData<T> : Data
     {
         protected byte[] coded;
         int completeIndex = 0;
@@ -70,8 +72,6 @@ namespace Exporter
         }
         public T Uncoded => DeCode<T>(coded);
     }
-    public class i32 : SmallData<System.Int32> { }
-    public class f64 : SmallData<float> { }
     public class ArrayData<T> : Data
     {
         byte[] coded;
@@ -135,5 +135,4 @@ namespace Exporter
             }
         }
     }
-    public class ni32 : ArrayData<System.Int32> { }
 }
