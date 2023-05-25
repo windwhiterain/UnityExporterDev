@@ -115,9 +115,6 @@ namespace Exporter
                     }
                 }
             }
-
-
-            [ContextMenu("UpdateData")]
             public void UpdateData()
             {
                 toSend.Update(Source);
@@ -188,6 +185,13 @@ namespace Exporter
             {
                 if (!created) { throw new Exception(); }
                 new ConnectJob(ip, port, this);
+            }
+            public void UpdateData()
+            {
+                foreach (var connector in connectorList)
+                {
+                    connector.UpdateData();
+                }
             }
             Thread findClient;
             bool created = false;

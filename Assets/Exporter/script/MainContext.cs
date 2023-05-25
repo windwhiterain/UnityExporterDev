@@ -33,5 +33,10 @@ namespace Exporter
         {
             node.connectorList[0].Send(new SmallData<System.Int32>(114514));
         }
+        [ContextMenu("UpdateData")]
+        void UpdateData()
+        {
+            node.UpdateData();
+        }
     }
 }
