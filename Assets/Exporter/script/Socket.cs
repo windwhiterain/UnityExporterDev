@@ -21,7 +21,8 @@ namespace Exporter
                 }
                 public int ReadTo(byte[] buffer, int start, int length)
                 {
-                    return socket.Receive(buffer, start, length, SocketFlags.None);
+                    if (socket.Available == 0) { return 0; }
+                    return socket.Receive(buffer, start, Mathf.Min(length, socket.Available), SocketFlags.None);
                 }
                 public int WriteFrom(byte[] buffer, int start, int length)
                 {
@@ -88,6 +89,7 @@ namespace Exporter
                 }
                 public void Update(DataSource source)
                 {
+                    Debug.Log("Update(");
                     while (true)
                     {
                         if (UnCompleteData())
@@ -107,12 +109,15 @@ namespace Exporter
                             break;
                         }
                     }
+                    Debug.Log("Update)");
                 }
             }
             void UpdateData()
             {
+                Debug.Log("UpdateData(");
                 toSend.Update(Source);
                 toReceive.Update(Source);
+                Debug.Log("UpdateData)");
             }
             public void SendAction(Action action)
             {
@@ -158,13 +163,17 @@ namespace Exporter
             }
             void UpdateAction()
             {
+                Debug.Log("Update(");
                 CheckReady();
                 CheckNewAction();
+                Debug.Log("Update)");
             }
             public void Update()
             {
+                Debug.Log("Update(");
                 UpdateData();
                 UpdateAction();
+                Debug.Log("Update)");
             }
             public void Close()
             {
