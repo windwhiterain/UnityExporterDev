@@ -34,26 +34,22 @@ namespace Exporter
         }
         Dictionary<string, int> nameIndexMap = new Dictionary<string, int>()
     {
-        {"i32",0},
-        {"f64",1},
-        {"ni32",2}
+        {"PrintInt",0},
     };
         int[] indexIdMap;
-        public IEnumerable<Data> GetDataToDecode(int id)
+        public Action ChooseResponse(int id)
         {
+            Action ret;
             if (id == indexIdMap[0])
             {
-                yield return new i32();
+                ret = new PrintInt();
+                ret.id = id;
             }
-            else if (id == indexIdMap[1])
+            else
             {
-                yield return new f64();
+                throw new System.Exception("未定义的协议id:" + id);
             }
-            else if (id == indexIdMap[2])
-            {
-                yield return new ni32();
-            }
-            yield break;
+            return ret;
         }
     }
 }
