@@ -24,6 +24,11 @@ namespace Exporter
             indexIdMap = new int[idNameMap.pairs.Length];
             foreach (var pair in idNameMap.pairs)
             {
+                if (!nameIndexMap.ContainsKey(pair.typeName))
+                {
+                    Debug.Log("当前版本未实现协议中的类型:" + pair.typeName);
+                    continue;
+                }
                 indexIdMap[nameIndexMap[pair.typeName]] = pair.id;
             }
         }
