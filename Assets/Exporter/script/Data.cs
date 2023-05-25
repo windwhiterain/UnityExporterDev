@@ -96,20 +96,20 @@ namespace Exporter
     public class ArrayData<T> : Data
     {
         byte[] coded;
-        i32 countData;
         int count;
+        i32 countData;
         int completeIndex;
         public ArrayData(T[] uncoded)
         {
-            count = uncoded.Length;
             var cell = CodedLength<T>();
-            var size = uncoded.Length * cell;
-            coded = new byte[size + 1];
-            var span = new System.Span<byte>(coded, 0, cell);
+            var i32Cell = CodedLength<System.Int32>();
+            var size = uncoded.Length * cell + i32Cell;
+            coded = new byte[size];
+            var span = new System.Span<byte>(coded, 0, i32Cell);
             EnCode(uncoded.Length, span);
-            for (int index = 1; index < uncoded.Length + 1; index++)
+            for (int index = 0; index < uncoded.Length; index++)
             {
-                var _span = new System.Span<byte>(coded, cell * index, cell);
+                var _span = new System.Span<byte>(coded, i32Cell + cell * index, cell);
                 EnCode(uncoded[index], _span);
             }
         }
@@ -144,12 +144,10 @@ namespace Exporter
             get
             {
                 var cell = CodedLength<T>();
-                var span = new System.Span<byte>(coded, 0, cell);
-                var Length = DeCode<System.Int32>(span);
-                var uncoded = new T[Length];
-                for (int index = 1; index < Length + 1; index++)
+                var uncoded = new T[count];
+                for (int index = 0; index < count; index++)
                 {
-                    var _span = new System.Span<byte>(coded, cell * index, cell);
+                    var span = new System.Span<byte>(coded, cell * index, cell);
                     uncoded[index] = DeCode<T>(span);
                 }
                 return uncoded;
