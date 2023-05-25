@@ -9,8 +9,8 @@ namespace Exporter
     using ni32 = ArrayData<System.Int32>;
     public abstract class Data
     {
-        public abstract void Read(DataSource source);
-        public abstract void Write(DataSource source);
+        public abstract void ReadTo(DataSource source);
+        public abstract void WriteFrom(DataSource source);
         protected bool complete = false;
         public bool Complete { get { return complete; } }
         protected int CodedLength<T>()
@@ -79,13 +79,13 @@ namespace Exporter
         {
             coded = new byte[CodedLength<T>()];
         }
-        public override void Read(DataSource source)
+        public override void ReadTo(DataSource source)
         {
             int left = coded.Length - completeIndex;
             completeIndex += source.Write(coded, completeIndex, left);
             if (completeIndex == coded.Length) { complete = true; }
         }
-        public override void Write(DataSource source)
+        public override void WriteFrom(DataSource source)
         {
             int left = coded.Length - completeIndex;
             completeIndex += source.Read(coded, completeIndex, left);
@@ -101,27 +101,36 @@ namespace Exporter
         int completeIndex;
         public ArrayData(T[] uncoded)
         {
+            countData = new i32(uncoded.Length);
             var cell = CodedLength<T>();
-            var i32Cell = CodedLength<System.Int32>();
-            var size = uncoded.Length * cell + i32Cell;
+            var size = uncoded.Length * cell;
             coded = new byte[size];
-            var span = new System.Span<byte>(coded, 0, i32Cell);
-            EnCode(uncoded.Length, span);
             for (int index = 0; index < uncoded.Length; index++)
             {
-                var _span = new System.Span<byte>(coded, i32Cell + cell * index, cell);
-                EnCode(uncoded[index], _span);
+                var span = new System.Span<byte>(coded, cell * index, cell);
+                EnCode(uncoded[index], span);
             }
         }
         public ArrayData()
         {
             countData = new i32();
         }
-        public override void Read(DataSource source)
+        public override void ReadTo(DataSource source)
         {
             if (!countData.Complete)
             {
-                countData.Read(source);
+                countData.ReadTo(source);
+                if (!countData.Complete) { return; }
+            }
+            int left = coded.Length - completeIndex;
+            completeIndex += source.Read(coded, completeIndex, left);
+            if (completeIndex == coded.Length) { complete = true; }
+        }
+        public override void WriteFrom(DataSource source)
+        {
+            if (!countData.Complete)
+            {
+                countData.WriteFrom(source);
                 if (!countData.Complete) { return; }
                 else
                 {
@@ -131,12 +140,6 @@ namespace Exporter
             }
             int left = coded.Length - completeIndex;
             completeIndex += source.Write(coded, completeIndex, left);
-            if (completeIndex == coded.Length) { complete = true; }
-        }
-        public override void Write(DataSource source)
-        {
-            int left = coded.Length - completeIndex;
-            completeIndex += source.Read(coded, completeIndex, left);
             if (completeIndex == coded.Length) { complete = true; }
         }
         public T[] Uncoded

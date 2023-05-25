@@ -93,11 +93,11 @@ namespace Exporter
                         {
                             if (readOrWrite)
                             {
-                                onSourcing.Read(source);
+                                onSourcing.ReadTo(source);
                             }
                             else
                             {
-                                onSourcing.Write(source);
+                                onSourcing.WriteFrom(source);
                             }
                             if (!onSourcing.Complete) { break; }
                         }
