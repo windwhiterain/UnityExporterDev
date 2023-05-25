@@ -77,7 +77,7 @@ namespace Exporter
                         return true;
                     }
                 }
-                bool UncertainData()
+                bool UnCompleteData()
                 {
                     while (true)
                     {
@@ -99,7 +99,7 @@ namespace Exporter
                 {
                     while (true)
                     {
-                        if (UncertainData())
+                        if (UnCompleteData())
                         {
                             if (readOrWrite)
                             {
@@ -109,9 +109,12 @@ namespace Exporter
                             {
                                 onSourcing.Write(source);
                             }
+                            if (!onSourcing.Complete) { break; }
                         }
-                        if (!onSourcing.Complete) { break; }
-                        if (!NextData()) { break; }
+                        else
+                        {
+                            break;
+                        }
                     }
                 }
             }
