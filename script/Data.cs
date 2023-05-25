@@ -20,7 +20,7 @@ namespace Exporter
             {
                 return sizeof(System.Int32);
             }
-            else if (temp is System.Int32)
+            else if (temp is System.Single)
             {
                 return sizeof(System.Single);
             }

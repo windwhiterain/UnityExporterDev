@@ -58,13 +58,7 @@ namespace Exporter
                 }
                 Queue<Data> pending = new Queue<Data>();
                 Data onSourcing;
-                Queue<Data> complete = new Queue<Data>();
                 public void Add(Data data) { pending.Enqueue(data); }
-                public Data GetComplete()
-                {
-                    if (complete.Count != 0) { return complete.Dequeue(); }
-                    else return null;
-                }
                 bool NextData()
                 {
                     if (pending.Count == 0)
@@ -83,10 +77,6 @@ namespace Exporter
                     {
                         if (onSourcing == null || onSourcing.Complete)
                         {
-                            if (onSourcing != null)
-                            {
-                                complete.Enqueue(onSourcing);
-                            }
                             if (!NextData()) { return false; }
                         }
                         else
@@ -122,12 +112,6 @@ namespace Exporter
             {
                 toSend.Update(Source);
                 toReceive.Update(Source);
-
-                var temp = toReceive.GetComplete();
-                if (temp != null)
-                {
-                    Debug.Log("recv");
-                }
             }
             public void Close()
             {
