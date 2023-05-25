@@ -296,6 +296,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ip: 10.133.175.171
   port: 800
+  protocol: {fileID: 226401042}
   connectIp: 
   connectPort: 0
 --- !u!114 &226401042

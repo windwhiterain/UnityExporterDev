@@ -34,7 +34,7 @@ namespace Exporter
         {
             node.connectorList[0].SendAction(new PrintInt());
         }
-        [ContextMenu("UpdateData")]
+        [ContextMenu("Update")]
         void UpdateData()
         {
             node.Update();
