@@ -89,7 +89,6 @@ namespace Exporter
                 }
                 public void Update(DataSource source)
                 {
-                    Debug.Log("Update(");
                     while (true)
                     {
                         if (UnCompleteData())
@@ -109,15 +108,12 @@ namespace Exporter
                             break;
                         }
                     }
-                    Debug.Log("Update)");
                 }
             }
             void UpdateData()
             {
-                Debug.Log("UpdateData(");
                 toSend.Update(Source);
                 toReceive.Update(Source);
-                Debug.Log("UpdateData)");
             }
             public void SendAction(Action action)
             {
@@ -139,7 +135,6 @@ namespace Exporter
                             actionReadyQueue.Enqueue(onReceive);
                         }
                         onReceive = null;
-                        Debug.Log("ActionReady");
                     }
                     else
                     {
@@ -157,27 +152,22 @@ namespace Exporter
                         ReceiveData(onReceive.InputData);
                         actionId = new SmallData<System.Int32>();
                         ReceiveData(actionId);
-                        Debug.Log("RecvAction");
                     }
                 }
                 else
                 {
                     actionId = new SmallData<System.Int32>();
                     ReceiveData(actionId);
-                    Debug.Log("RecvIdData");
                 }
             }
             void UpdateAction()
             {
-                Debug.Log("UpdateAction(");
                 CheckReady();
                 CheckNewAction();
-                Debug.Log("UpdateAction)");
             }
-            void ExecuteAction()
+            public void ExecuteAction()
             {
-
-                if (actionReadyQueue.Count != 0)
+                while (actionReadyQueue.Count != 0)
                 {
                     Action action;
                     lock (actionReadyQueue)
@@ -189,11 +179,8 @@ namespace Exporter
             }
             public void Update()
             {
-                Debug.Log("Update(");
                 UpdateData();
                 UpdateAction();
-                ExecuteAction();
-                Debug.Log("Update)");
             }
             public void Close()
             {
@@ -250,7 +237,10 @@ namespace Exporter
                 {
                     var newSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                     newSocket.Connect(IPAddress.Parse(ip), port);
-                    node.connectorList.Add(new Connector(newSocket, protocol));
+                    lock (node.connectorList)
+                    {
+                        node.connectorList.Add(new Connector(newSocket, protocol));
+                    }
                 }
             }
 
@@ -259,14 +249,28 @@ namespace Exporter
                 if (!created) { throw new Exception(); }
                 new ConnectJob(ip, port, this, protocol);
             }
-            public void Update()
+            void Update()
+            {
+                while (true)
+                {
+                    lock (connectorList)
+                    {
+                        foreach (var connector in connectorList)
+                        {
+                            connector.Update();
+                        }
+                    }
+                }
+            }
+            public void ExcecuteAction()
             {
                 foreach (var connector in connectorList)
                 {
-                    connector.Update();
+                    connector.ExecuteAction();
                 }
             }
             Thread findClient;
+            Thread update;
             bool created = false;
             public void Create()
             {
@@ -274,12 +278,15 @@ namespace Exporter
                 else { created = true; }
                 findClient = new Thread(FindClient);
                 findClient.Start();
+                update = new Thread(Update);
+                update.Start();
             }
             public void Release()
             {
                 if (!created) { throw new Exception(); }
                 else { created = false; }
                 findClient.Abort();
+                update.Abort();
                 foreach (var connector in connectorList)
                 {
                     connector.Close();

@@ -34,10 +34,10 @@ namespace Exporter
         {
             node.connectorList[0].SendAction(new PrintInt(114514));
         }
-        [ContextMenu("Update")]
+        [ContextMenu("Execute")]
         void UpdateData()
         {
-            node.Update();
+            node.ExcecuteAction();
         }
     }
 }

@@ -297,8 +297,8 @@ MonoBehaviour:
   ip: 10.133.175.171
   port: 800
   protocol: {fileID: 226401042}
-  connectIp: 
-  connectPort: 0
+  connectIp: 10.133.175.171
+  connectPort: 801
 --- !u!114 &226401042
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -312,7 +312,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   idNameMap:
-    pairs: []
+    pairs:
+    - id: 0
+      typeName: PrintInt
   path: Assets/Exporter/Protocol.json
 --- !u!1 &1160188868
 GameObject:
