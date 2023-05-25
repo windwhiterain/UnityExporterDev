@@ -6,8 +6,8 @@ using System.Threading;
 using System.Runtime.InteropServices;
 public interface DataSource
 {
-    public int Read(byte[] buffer, int start, int length);
-    public int Write(byte[] buffer, int start, int length);
+    public int ReadTo(byte[] buffer, int start, int length);
+    public int WriteFrom(byte[] buffer, int start, int length);
 }
 struct ByteSource : DataSource
 {
@@ -22,7 +22,7 @@ struct ByteSource : DataSource
         this.length = length;
         index = 0;
     }
-    public int Read(byte[] buffer, int start, int length)
+    public int ReadTo(byte[] buffer, int start, int length)
     {
         var left = this.length - this.index;
         var size = Mathf.Min(left, length);
@@ -31,7 +31,7 @@ struct ByteSource : DataSource
         index += size;
         return size;
     }
-    public int Write(byte[] buffer, int start, int length)
+    public int WriteFrom(byte[] buffer, int start, int length)
     {
         var left = this.length - this.index;
         var size = Mathf.Min(left, length);
@@ -107,7 +107,7 @@ class CircularBuffer
             foreach ((int start, int end) in region.startEndArray)
             {
                 size = end - start;
-                var actualSize = source.Read(buffer, start, size);
+                var actualSize = source.ReadTo(buffer, start, size);
                 nextWrite = NextIndex(nextWrite, actualSize);
                 if (actualSize < size)
                 {
@@ -124,7 +124,7 @@ class CircularBuffer
             foreach ((int start, int end) in region.startEndArray)
             {
                 size = end - start;
-                var actualSize = source.Write(buffer, start, size);
+                var actualSize = source.WriteFrom(buffer, start, size);
                 nextRead = NextIndex(nextRead, actualSize);
                 if (actualSize < size)
                 {

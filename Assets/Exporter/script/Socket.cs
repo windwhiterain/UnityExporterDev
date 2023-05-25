@@ -19,11 +19,11 @@ namespace Exporter
                 {
                     this.socket = socket;
                 }
-                public int Read(byte[] buffer, int start, int length)
+                public int ReadTo(byte[] buffer, int start, int length)
                 {
                     return socket.Receive(buffer, start, length, SocketFlags.None);
                 }
-                public int Write(byte[] buffer, int start, int length)
+                public int WriteFrom(byte[] buffer, int start, int length)
                 {
                     return socket.Send(buffer, start, length, SocketFlags.None);
                 }
@@ -83,6 +83,7 @@ namespace Exporter
                         {
                             return true;
                         }
+                        Debug.Log(1);
                     }
                 }
                 public void Update(DataSource source)
@@ -105,6 +106,7 @@ namespace Exporter
                         {
                             break;
                         }
+                        Debug.Log(2);
                     }
                 }
             }

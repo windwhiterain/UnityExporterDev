@@ -82,13 +82,13 @@ namespace Exporter
         public override void ReadTo(DataSource source)
         {
             int left = coded.Length - completeIndex;
-            completeIndex += source.Write(coded, completeIndex, left);
+            completeIndex += source.WriteFrom(coded, completeIndex, left);
             if (completeIndex == coded.Length) { complete = true; }
         }
         public override void WriteFrom(DataSource source)
         {
             int left = coded.Length - completeIndex;
-            completeIndex += source.Read(coded, completeIndex, left);
+            completeIndex += source.ReadTo(coded, completeIndex, left);
             if (completeIndex == coded.Length) { complete = true; }
         }
         public T Uncoded => DeCode<T>(coded);
@@ -123,7 +123,7 @@ namespace Exporter
                 if (!countData.Complete) { return; }
             }
             int left = coded.Length - completeIndex;
-            completeIndex += source.Read(coded, completeIndex, left);
+            completeIndex += source.WriteFrom(coded, completeIndex, left);
             if (completeIndex == coded.Length) { complete = true; }
         }
         public override void WriteFrom(DataSource source)
@@ -139,7 +139,7 @@ namespace Exporter
                 }
             }
             int left = coded.Length - completeIndex;
-            completeIndex += source.Write(coded, completeIndex, left);
+            completeIndex += source.ReadTo(coded, completeIndex, left);
             if (completeIndex == coded.Length) { complete = true; }
         }
         public T[] Uncoded
