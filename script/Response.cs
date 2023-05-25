@@ -17,6 +17,10 @@ namespace Exporter
     public class PrintInt : Action
     {
         i32 toPrint;
+        public PrintInt(int value)
+        {
+            toPrint = new i32(value);
+        }
         public override Data InputData => toPrint;
         public override void Excecute()
         {

@@ -32,7 +32,7 @@ namespace Exporter
         [ContextMenu("Send")]
         void Send()
         {
-            node.connectorList[0].SendAction(new PrintInt());
+            node.connectorList[0].SendAction(new PrintInt(114514));
         }
         [ContextMenu("Update")]
         void UpdateData()
