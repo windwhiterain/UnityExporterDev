@@ -31,9 +31,10 @@ namespace Exporter
             Socket socket;
             CircularBuffer receive;
             CircularBuffer send;
-            public Connector(Socket socket)
+            public Connector(Socket socket, Protocol protocol)
             {
                 this.socket = socket;
+                this.protocol = protocol;
             }
             public DataSource Source
             {
@@ -41,11 +42,11 @@ namespace Exporter
             }
             DataSourcer toSend = new DataSourcer(true);
             DataSourcer toReceive = new DataSourcer(false);
-            public void Send(Data data)
+            void SendData(Data data)
             {
                 toSend.Add(data);
             }
-            public void Receive(Data data)
+            void ReceiveData(Data data)
             {
                 toReceive.Add(data);
             }
@@ -83,7 +84,6 @@ namespace Exporter
                         {
                             return true;
                         }
-                        Debug.Log(1);
                     }
                 }
                 public void Update(DataSource source)
@@ -106,14 +106,65 @@ namespace Exporter
                         {
                             break;
                         }
-                        Debug.Log(2);
                     }
                 }
             }
-            public void UpdateData()
+            void UpdateData()
             {
                 toSend.Update(Source);
                 toReceive.Update(Source);
+            }
+            public void SendAction(Action action)
+            {
+                SendData(new SmallData<Int32>(action.id));
+                SendData(action.InputData);
+            }
+            Protocol protocol;
+            Queue<Action> readyToExcecute = new Queue<Action>();
+            Action onReceive;
+            SmallData<System.Int32> actionId;
+            void CheckReady()
+            {
+                if (onReceive != null)
+                {
+                    if (onReceive.Ready)
+                    {
+                        readyToExcecute.Enqueue(onReceive);
+                        onReceive = null;
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+            }
+            void CheckNewAction()
+            {
+                if (actionId != null)
+                {
+                    if (actionId.Complete && onReceive == null)
+                    {
+                        onReceive = protocol.ChooseResponse(actionId.Uncoded);
+                        ReceiveData(onReceive.InputData);
+                        actionId = new SmallData<System.Int32>();
+                        ReceiveData(actionId);
+                    }
+                }
+                else
+                {
+                    actionId = new SmallData<System.Int32>();
+                    ReceiveData(actionId);
+                }
+            }
+            void UpdateAction()
+            {
+                CheckReady();
+                CheckNewAction();
+            }
+            public void Update()
+            {
+                UpdateData();
+                UpdateAction();
             }
             public void Close()
             {
@@ -126,8 +177,10 @@ namespace Exporter
             IPAddress ip;
             int port;
             IPEndPoint ipEndPoint;
-            public NetNode(string ip, int port)
+            Protocol protocol;
+            public NetNode(string ip, int port, Protocol protocol)
             {
+                this.protocol = protocol;
                 var _ip = IPAddress.Parse(ip);
                 this.ip = _ip;
                 this.port = port;
@@ -142,7 +195,7 @@ namespace Exporter
                 socket.Listen(maxPendingClients);
                 while (connectorList.Count < maxClients)
                 {
-                    var newSocket = new Connector(socket.Accept());
+                    var newSocket = new Connector(socket.Accept(), protocol);
                     lock (connectorList)
                     {
                         connectorList.Add(newSocket);
@@ -154,11 +207,13 @@ namespace Exporter
                 string ip;
                 int port;
                 NetNode node;
-                public ConnectJob(string ip, int port, NetNode node)
+                Protocol protocol;
+                public ConnectJob(string ip, int port, NetNode node, Protocol protocol)
                 {
                     this.ip = ip;
                     this.port = port;
                     this.node = node;
+                    this.protocol = protocol;
                     var thread = new Thread(Connect);
                     thread.Start();
                 }
@@ -166,20 +221,20 @@ namespace Exporter
                 {
                     var newSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                     newSocket.Connect(IPAddress.Parse(ip), port);
-                    node.connectorList.Add(new Connector(newSocket));
+                    node.connectorList.Add(new Connector(newSocket, protocol));
                 }
             }
 
             public void Connect(string ip, int port)
             {
                 if (!created) { throw new Exception(); }
-                new ConnectJob(ip, port, this);
+                new ConnectJob(ip, port, this, protocol);
             }
-            public void UpdateData()
+            public void Update()
             {
                 foreach (var connector in connectorList)
                 {
-                    connector.UpdateData();
+                    connector.Update();
                 }
             }
             Thread findClient;

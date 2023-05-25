@@ -10,10 +10,11 @@ namespace Exporter
         [SerializeField] string ip;
         [SerializeField] int port;
         NetNode node;
+        [SerializeField] Protocol protocol;
         [ContextMenu("CreateServer")]
         void CreateNode()
         {
-            node = new NetNode(ip, port);
+            node = new NetNode(ip, port, protocol);
             node.Create();
         }
         [ContextMenu("ReleaseServer")]
@@ -31,26 +32,12 @@ namespace Exporter
         [ContextMenu("Send")]
         void Send()
         {
-            node.connectorList[0].Send(new ArrayData<System.Int32>(new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 }));
-        }
-        ArrayData<System.Int32> testData = new ArrayData<System.Int32>();
-        [ContextMenu("Receive")]
-        void Receive()
-        {
-            node.connectorList[0].Receive(testData);
-        }
-        [ContextMenu("Result")]
-        void Result()
-        {
-            if (testData.Complete)
-            {
-                Debug.Log(testData.Uncoded.ToString());
-            }
+            node.connectorList[0].SendAction(new PrintInt());
         }
         [ContextMenu("UpdateData")]
         void UpdateData()
         {
-            node.UpdateData();
+            node.Update();
         }
     }
 }
