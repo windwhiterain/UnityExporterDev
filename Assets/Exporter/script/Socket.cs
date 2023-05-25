@@ -125,7 +125,7 @@ namespace Exporter
                 SendData(action.InputData);
             }
             Protocol protocol;
-            Queue<Action> readyToExcecute = new Queue<Action>();
+            Queue<Action> actionReadyQueue = new Queue<Action>();
             Action onReceive;
             SmallData<System.Int32> actionId;
             void CheckReady()
@@ -134,8 +134,12 @@ namespace Exporter
                 {
                     if (onReceive.Ready)
                     {
-                        readyToExcecute.Enqueue(onReceive);
+                        lock (actionReadyQueue)
+                        {
+                            actionReadyQueue.Enqueue(onReceive);
+                        }
                         onReceive = null;
+                        Debug.Log("ActionReady");
                     }
                     else
                     {
@@ -153,26 +157,42 @@ namespace Exporter
                         ReceiveData(onReceive.InputData);
                         actionId = new SmallData<System.Int32>();
                         ReceiveData(actionId);
+                        Debug.Log("RecvAction");
                     }
                 }
                 else
                 {
                     actionId = new SmallData<System.Int32>();
                     ReceiveData(actionId);
+                    Debug.Log("RecvIdData");
                 }
             }
             void UpdateAction()
             {
-                Debug.Log("Update(");
+                Debug.Log("UpdateAction(");
                 CheckReady();
                 CheckNewAction();
-                Debug.Log("Update)");
+                Debug.Log("UpdateAction)");
+            }
+            void ExecuteAction()
+            {
+
+                if (actionReadyQueue.Count != 0)
+                {
+                    Action action;
+                    lock (actionReadyQueue)
+                    {
+                        action = actionReadyQueue.Dequeue();
+                    }
+                    action.Excecute();
+                }
             }
             public void Update()
             {
                 Debug.Log("Update(");
                 UpdateData();
                 UpdateAction();
+                ExecuteAction();
                 Debug.Log("Update)");
             }
             public void Close()
