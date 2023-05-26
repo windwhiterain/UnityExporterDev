@@ -5,195 +5,179 @@ using System;
 using System.Net.Sockets;  //套接字的命名空间
 using System.Net; //IPAddress的命名空间
 using System.Threading; //线程的命名空间
+using System.Collections.Concurrent;
 
 namespace Exporter
 {
     namespace EasySocket
     {
-        public class Connector
+        public class NetNode
         {
-            public struct SocketSource : DataSource
+            public class Connector
             {
+                public struct SocketSource : DataSource
+                {
+                    Socket socket;
+                    public SocketSource(Socket socket)
+                    {
+                        this.socket = socket;
+                    }
+                    public int ReadTo(byte[] buffer, int start, int length)
+                    {
+                        if (socket.Available == 0) { return 0; }
+                        return socket.Receive(buffer, start, Mathf.Min(length, socket.Available), SocketFlags.None);
+                    }
+                    public int WriteFrom(byte[] buffer, int start, int length)
+                    {
+                        return socket.Send(buffer, start, length, SocketFlags.None);
+                    }
+                }
                 Socket socket;
-                public SocketSource(Socket socket)
+                NetNode node;
+                public Connector(Socket socket, NetNode node)
                 {
                     this.socket = socket;
+                    this.node = node;
                 }
-                public int ReadTo(byte[] buffer, int start, int length)
+                public DataSource Source
                 {
-                    if (socket.Available == 0) { return 0; }
-                    return socket.Receive(buffer, start, Mathf.Min(length, socket.Available), SocketFlags.None);
+                    get { return new SocketSource(socket); }
                 }
-                public int WriteFrom(byte[] buffer, int start, int length)
+                DataSourcer toSend = new DataSourcer(true);
+                DataSourcer toReceive = new DataSourcer(false);
+                void SendData(Data data)
                 {
-                    return socket.Send(buffer, start, length, SocketFlags.None);
+                    toSend.Add(data);
                 }
-            }
-            Socket socket;
-            CircularBuffer receive;
-            CircularBuffer send;
-            public Connector(Socket socket, Protocol protocol)
-            {
-                this.socket = socket;
-                this.protocol = protocol;
-            }
-            public DataSource Source
-            {
-                get { return new SocketSource(socket); }
-            }
-            DataSourcer toSend = new DataSourcer(true);
-            DataSourcer toReceive = new DataSourcer(false);
-            void SendData(Data data)
-            {
-                toSend.Add(data);
-            }
-            void ReceiveData(Data data)
-            {
-                toReceive.Add(data);
-            }
-            class DataSourcer
-            {
-                bool readOrWrite;
-                public DataSourcer(bool readOrWrite)
+                void ReceiveData(Data data)
                 {
-                    this.readOrWrite = readOrWrite;
+                    toReceive.Add(data);
                 }
-                Queue<Data> pending = new Queue<Data>();
-                Data onSourcing;
-                public void Add(Data data) { pending.Enqueue(data); }
-                bool NextData()
+                class DataSourcer
                 {
-                    if (pending.Count == 0)
+                    bool readOrWrite;
+                    public DataSourcer(bool readOrWrite)
                     {
-                        return false;
+                        this.readOrWrite = readOrWrite;
                     }
-                    else
+                    Queue<Data> pending = new Queue<Data>();
+                    Data onSourcing;
+                    public void Add(Data data) { pending.Enqueue(data); }
+                    bool NextData()
                     {
-                        onSourcing = pending.Dequeue();
-                        return true;
-                    }
-                }
-                bool UnCompleteData()
-                {
-                    while (true)
-                    {
-                        if (onSourcing == null || onSourcing.Complete)
+                        if (pending.Count == 0)
                         {
-                            if (!NextData()) { return false; }
+                            return false;
                         }
                         else
                         {
+                            onSourcing = pending.Dequeue();
                             return true;
                         }
                     }
-                }
-                public void Update(DataSource source)
-                {
-                    while (true)
+                    bool UnCompleteData()
                     {
-                        if (UnCompleteData())
+                        while (true)
                         {
-                            if (readOrWrite)
+                            if (onSourcing == null || onSourcing.Complete)
                             {
-                                onSourcing.ReadTo(source);
+                                if (!NextData()) { return false; }
                             }
                             else
                             {
-                                onSourcing.WriteFrom(source);
+                                return true;
                             }
-                            if (!onSourcing.Complete) { break; }
+                        }
+                    }
+                    public void Update(DataSource source)
+                    {
+                        while (true)
+                        {
+                            if (UnCompleteData())
+                            {
+                                if (readOrWrite)
+                                {
+                                    onSourcing.ReadTo(source);
+                                }
+                                else
+                                {
+                                    onSourcing.WriteFrom(source);
+                                }
+                                if (!onSourcing.Complete) { break; }
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+                    }
+                }
+                void UpdateData()
+                {
+                    toSend.Update(Source);
+                    toReceive.Update(Source);
+                }
+                public void SendAction(Action action)
+                {
+                    SendData(new SmallData<Int32>(action.id));
+                    SendData(action.InputData);
+                }
+                Action onReceive;
+                SmallData<System.Int32> actionId;
+                void CheckReady()
+                {
+                    if (onReceive != null)
+                    {
+                        if (onReceive.Ready)
+                        {
+                            node.readyAction.Enqueue(onReceive);
+                            onReceive = null;
                         }
                         else
                         {
-                            break;
+                            return;
                         }
                     }
                 }
-            }
-            void UpdateData()
-            {
-                toSend.Update(Source);
-                toReceive.Update(Source);
-            }
-            public void SendAction(Action action)
-            {
-                SendData(new SmallData<Int32>(action.id));
-                SendData(action.InputData);
-            }
-            Protocol protocol;
-            Queue<Action> actionReadyQueue = new Queue<Action>();
-            Action onReceive;
-            SmallData<System.Int32> actionId;
-            void CheckReady()
-            {
-                if (onReceive != null)
+                void CheckNewAction()
                 {
-                    if (onReceive.Ready)
+                    if (actionId != null)
                     {
-                        lock (actionReadyQueue)
+                        if (actionId.Complete && onReceive == null)
                         {
-                            actionReadyQueue.Enqueue(onReceive);
+                            onReceive = node.protocol.ChooseResponse(actionId.Uncoded);
+                            ReceiveData(onReceive.InputData);
+                            actionId = new SmallData<System.Int32>();
+                            ReceiveData(actionId);
                         }
-                        onReceive = null;
                     }
                     else
                     {
-                        return;
-                    }
-                }
-            }
-            void CheckNewAction()
-            {
-                if (actionId != null)
-                {
-                    if (actionId.Complete && onReceive == null)
-                    {
-                        onReceive = protocol.ChooseResponse(actionId.Uncoded);
-                        ReceiveData(onReceive.InputData);
                         actionId = new SmallData<System.Int32>();
                         ReceiveData(actionId);
                     }
                 }
-                else
+                void UpdateAction()
                 {
-                    actionId = new SmallData<System.Int32>();
-                    ReceiveData(actionId);
+                    CheckReady();
+                    CheckNewAction();
+                }
+                public void Update()
+                {
+                    UpdateData();
+                    UpdateAction();
+                }
+                public void Close()
+                {
+                    socket.Close();
                 }
             }
-            void UpdateAction()
-            {
-                CheckReady();
-                CheckNewAction();
-            }
-            public void ExecuteAction()
-            {
-                while (actionReadyQueue.Count != 0)
-                {
-                    Action action;
-                    lock (actionReadyQueue)
-                    {
-                        action = actionReadyQueue.Dequeue();
-                    }
-                    action.Excecute();
-                }
-            }
-            public void Update()
-            {
-                UpdateData();
-                UpdateAction();
-            }
-            public void Close()
-            {
-                socket.Close();
-            }
-        }
-        class NetNode
-        {
+
             Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             IPAddress ip;
             int port;
             IPEndPoint ipEndPoint;
-            Protocol protocol;
+            protected Protocol protocol;
             public NetNode(string ip, int port, Protocol protocol)
             {
                 this.protocol = protocol;
@@ -206,16 +190,17 @@ namespace Exporter
             public int maxPendingClients = 1;
             public int maxClients = 1;
             public List<Connector> connectorList = new List<Connector>();
+            public ConcurrentQueue<Connector> connectorToAdd = new ConcurrentQueue<Connector>();
+            public ConcurrentQueue<Connector> connectorToRemove = new ConcurrentQueue<Connector>();
             void FindClient()
             {
                 socket.Listen(maxPendingClients);
                 while (connectorList.Count < maxClients)
                 {
-                    var newSocket = new Connector(socket.Accept(), protocol);
-                    lock (connectorList)
-                    {
-                        connectorList.Add(newSocket);
-                    }
+                    var newSocket = socket.Accept();
+                    var newConnector = new Connector(newSocket, this);
+                    connectorToAdd.Enqueue(newConnector);
+                    Debug.Log("连接至:");
                 }
             }
             struct ConnectJob
@@ -237,10 +222,8 @@ namespace Exporter
                 {
                     var newSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                     newSocket.Connect(IPAddress.Parse(ip), port);
-                    lock (node.connectorList)
-                    {
-                        node.connectorList.Add(new Connector(newSocket, protocol));
-                    }
+                    node.connectorToAdd.Enqueue(new Connector(newSocket, node));
+                    Debug.Log("连接至:" + ip + "-" + port);
                 }
             }
 
@@ -253,21 +236,33 @@ namespace Exporter
             {
                 while (true)
                 {
-                    lock (connectorList)
+                    foreach (var connector in connectorList)
                     {
-                        foreach (var connector in connectorList)
+                        connector.Update();
+                    }
+                    while (!connectorToAdd.IsEmpty)
+                    {
+                        Connector connector;
+                        if (connectorToAdd.TryDequeue(out connector))
                         {
-                            connector.Update();
+                            connectorList.Add(connector);
                         }
                     }
                 }
             }
+            protected ConcurrentQueue<Action> readyAction = new ConcurrentQueue<Action>();
             public void ExcecuteAction()
             {
-                foreach (var connector in connectorList)
+
+                while (!readyAction.IsEmpty)
                 {
-                    connector.ExecuteAction();
+                    Action action;
+                    if (readyAction.TryDequeue(out action))
+                    {
+                        action.Excecute();
+                    }
                 }
+
             }
             Thread findClient;
             Thread update;

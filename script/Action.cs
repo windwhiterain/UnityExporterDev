@@ -13,9 +13,11 @@ namespace Exporter
         public bool Ready => InputData.Complete;
         public abstract Data InputData { get; }
         public abstract void Excecute();
+        public abstract string name { get; }
     }
     public class PrintInt : Action
     {
+        public override string name => "PrintInt";
         i32 toPrint;
         public PrintInt(int value)
         {

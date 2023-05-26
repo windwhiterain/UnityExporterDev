@@ -13,43 +13,46 @@ namespace Exporter
         [System.Serializable]
         public class IdNamePair { public int id; public string typeName; }
         [System.Serializable]
-        public class IdNameMap { public IdNamePair[] pairs; }
-        [SerializeField] IdNameMap idNameMap;
+        public class ProtocolStruct { public IdNamePair[] pairs; }
+        [SerializeField] ProtocolStruct protocolStruct;
         [SerializeField] string path;
         [ContextMenu("Parse")]
         public void Parse()
         {
             string json = File.ReadAllText(path);
-            idNameMap = JsonUtility.FromJson<IdNameMap>(json);
-            indexIdMap = new int[idNameMap.pairs.Length];
-            foreach (var pair in idNameMap.pairs)
+            protocolStruct = JsonUtility.FromJson<ProtocolStruct>(json);
+            var nameIdMap = new Dictionary<string, int>();
+            foreach (var pair in protocolStruct.pairs)
             {
-                if (!nameIndexMap.ContainsKey(pair.typeName))
+                nameIdMap.Add(pair.typeName, pair.id);
+            }
+            idActionMap = new CreateAction[protocolStruct.pairs.Length];
+            for (int i = 0; i < implementedAction.Length; i++)
+            {
+                var creator = implementedAction[i];
+                var name = creator().name;
+                if (nameIdMap.ContainsKey(name))
                 {
-                    Debug.Log("当前版本未实现协议中的类型:" + pair.typeName);
-                    continue;
+                    var id = nameIdMap[name];
+                    idActionMap[id] = creator;
                 }
-                indexIdMap[nameIndexMap[pair.typeName]] = pair.id;
+            }
+            for (int i = 0; i < idActionMap.Length; i++)
+            {
+                if (idActionMap[i] == null)
+                {
+                    throw new System.Exception("当前版本未实现协议中的类型:" + i);
+                }
             }
         }
-        Dictionary<string, int> nameIndexMap = new Dictionary<string, int>()
-    {
-        {"PrintInt",0},
-    };
-        int[] indexIdMap;
+        delegate Action CreateAction();
+        CreateAction[] implementedAction = new CreateAction[]{
+            ()=>new PrintInt()
+        };
+        CreateAction[] idActionMap;
         public Action ChooseResponse(int id)
         {
-            Action ret;
-            if (id == indexIdMap[0])
-            {
-                ret = new PrintInt();
-                ret.id = id;
-            }
-            else
-            {
-                throw new System.Exception("未定义的协议id:" + id);
-            }
-            return ret;
+            return idActionMap[id]();
         }
     }
 }

@@ -14,6 +14,7 @@ namespace Exporter
         [ContextMenu("CreateServer")]
         void CreateNode()
         {
+            protocol.Parse();
             node = new NetNode(ip, port, protocol);
             node.Create();
         }
